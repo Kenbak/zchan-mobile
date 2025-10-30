@@ -19,16 +19,10 @@ interface HomeScreenProps {
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ onChannelPress }) => {
   const wallet = useWalletStore((state) => state.wallet);
-  const refreshBalance = useWalletStore((state) => state.refreshBalance);
   const deleteWallet = useWalletStore((state) => state.deleteWallet);
 
-  useEffect(() => {
-    // Initial balance fetch
-    if (wallet) {
-      refreshBalance();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only run once on mount
+  // Balance is now automatically updated by the Zcash SDK synchronizer
+  // No need to manually refresh
 
   const getWalletAddress = () => {
     if (!wallet) return '';
@@ -43,8 +37,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onChannelPress }) => {
 
   const getBalanceInZec = () => {
     if (!wallet) return 0;
+    console.log('[HomeScreen] 💰 getBalanceInZec called');
+    console.log('[HomeScreen] wallet.balance type:', typeof wallet.balance);
+    console.log('[HomeScreen] wallet.balance:', JSON.stringify(wallet.balance));
+
     // Handle both old (number) and new (object) balance formats
     if (typeof wallet.balance === 'number') {
+      console.log('[HomeScreen] Using number format:', wallet.balance);
       return wallet.balance;
     } else {
       // Convert zatoshi to ZEC (1 ZEC = 100,000,000 zatoshi)
@@ -53,7 +52,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onChannelPress }) => {
         wallet.balance.saplingAvailable +
         wallet.balance.orchardAvailable +
         wallet.balance.transparentAvailable;
-      return totalZatoshi / 100_000_000;
+      const totalZec = totalZatoshi / 100_000_000;
+      console.log('[HomeScreen] Using object format - Total zatoshi:', totalZatoshi, '- Total ZEC:', totalZec);
+      return totalZec;
     }
   };
 

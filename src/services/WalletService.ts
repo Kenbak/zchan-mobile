@@ -79,7 +79,7 @@ export class WalletService {
       // Create Zcash wallet using native SDK
       console.log('[WalletService] Creating Zcash wallet with native SDK...');
       const { wallet: zcashWallet, synchronizer } = await ZcashService.createWallet(seedPhrase);
-      
+
       console.log('[WalletService] Zcash wallet created successfully');
       console.log('- Wallet ID:', zcashWallet.id);
       console.log('- Unified address:', zcashWallet.addresses.unifiedAddress.substring(0, 30) + '...');
@@ -141,20 +141,40 @@ export class WalletService {
         return null;
       }
 
-      console.log('[WalletService] Deriving address from seed...');
-      // Derive address from seed (mock for now)
-      const address = this.generateMockZcashAddress();
-      console.log('[WalletService] Address derived');
+      console.log('[WalletService] Re-initializing Zcash wallet with existing seed...');
+      // Re-create the wallet using ZcashService with the stored seed
+      const { wallet: zcashWallet, synchronizer } = await ZcashService.createWallet(seedPhrase);
+
+      console.log('[WalletService] Zcash wallet re-initialized successfully');
+      console.log('- Unified address:', zcashWallet.addresses.unifiedAddress.substring(0, 30) + '...');
+
+      // Start synchronization in background
+      console.log('[WalletService] Starting blockchain sync...');
+      ZcashService.startSync(synchronizer).catch((err) => {
+        console.error('[WalletService] Sync error:', err);
+      });
 
       const wallet: Wallet = {
-        id: walletId,
-        addresses: [address],
-        balance: 0.001, // Mock balance for testing
-        createdAt: Date.now(),
-        lastSynced: Date.now(),
+        id: zcashWallet.id,
+        addresses: zcashWallet.addresses,
+        balance: zcashWallet.balance,
+        createdAt: zcashWallet.createdAt,
+        lastSynced: zcashWallet.lastSynced,
       };
 
       console.log('[WalletService] Wallet object created successfully');
+      console.log('[WalletService] 💰 BALANCE DETAILS (from getWallet):');
+      console.log('- Raw balance:', JSON.stringify(zcashWallet.balance, null, 2));
+      if (typeof zcashWallet.balance === 'object') {
+        const totalZatoshi =
+          zcashWallet.balance.saplingAvailable +
+          zcashWallet.balance.orchardAvailable +
+          zcashWallet.balance.transparentAvailable;
+        console.log('- Total zatoshi:', totalZatoshi);
+        console.log('- Total ZEC:', (totalZatoshi / 100_000_000).toFixed(8));
+      } else {
+        console.log('- Balance is a number:', zcashWallet.balance);
+      }
       return wallet;
     } catch (error) {
       console.error('[WalletService] Failed to get wallet:', error);

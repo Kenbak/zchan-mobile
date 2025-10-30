@@ -41,54 +41,81 @@ export class ZcashService {
   ): Promise<{ wallet: ZcashWallet; synchronizer: Synchronizer }> {
     try {
       console.log('[ZcashService] Creating wallet...');
-      
+
       // Valider la seed phrase
       if (!bip39.validateMnemonic(seedPhrase)) {
         throw new Error('Invalid seed phrase');
       }
 
-      // Convertir la seed phrase en bytes
-      const seedBytes = bip39.mnemonicToSeedSync(seedPhrase);
-      const seedHex = seedBytes.toString('hex');
-      
       console.log('[ZcashService] Getting birthday height...');
-      
-      // Obtenir le birthday height (hauteur de bloc actuelle)
-      const birthdayHeight = await Tools.getBirthdayHeight(
-        config.lightwalletdHost,
-        config.lightwalletdPort
-      );
-      
-      console.log('[ZcashService] Birthday height:', birthdayHeight);
-      
+
+      // Obtenir le birthday height avec retry et timeout augmenté
+      const FALLBACK_BIRTHDAY_HEIGHT = 2800000; // October 2024 testnet checkpoint
+      const MAX_RETRIES = 3;
+      const RETRY_DELAY_MS = 2000;
+
+      let birthdayHeight = FALLBACK_BIRTHDAY_HEIGHT;
+
+      // Retry loop avec délai entre tentatives
+      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        try {
+          console.log(`[ZcashService] Fetching birthday height (attempt ${attempt}/${MAX_RETRIES})...`);
+
+          // Timeout wrapper: 30 secondes par tentative
+          const fetchedHeight = await Promise.race([
+            Tools.getBirthdayHeight(
+              config.lightwalletdHost,
+              config.lightwalletdPort
+            ),
+            new Promise<number>((_, reject) =>
+              setTimeout(() => reject(new Error('Timeout after 30s')), 30000)
+            )
+          ]);
+
+          birthdayHeight = fetchedHeight;
+          console.log('[ZcashService] ✅ Birthday height from server:', birthdayHeight);
+          break; // Success, exit retry loop
+        } catch (error) {
+          console.warn(`[ZcashService] Attempt ${attempt} failed:`, error);
+
+          if (attempt < MAX_RETRIES) {
+            console.log(`[ZcashService] Retrying in ${RETRY_DELAY_MS}ms...`);
+            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+          } else {
+            console.warn('[ZcashService] ❌ All attempts failed, using fallback:', FALLBACK_BIRTHDAY_HEIGHT);
+            birthdayHeight = FALLBACK_BIRTHDAY_HEIGHT;
+          }
+        }
+      }
+
       // Créer un alias unique pour ce wallet
       const alias = `zchan_${Date.now()}`;
-      
+
       console.log('[ZcashService] Initializing synchronizer...');
-      
+
       // Créer le synchronizer
       const synchronizer = await makeSynchronizer({
         networkName: config.network,
         defaultHost: config.lightwalletdHost,
         defaultPort: config.lightwalletdPort,
-        mnemonicSeed: seedHex,
+        mnemonicSeed: seedPhrase, // Seed phrase in text format (24 words)
         alias,
         birthdayHeight,
         newWallet: true,
       });
-      
+
       currentSynchronizer = synchronizer;
-      
+
       console.log('[ZcashService] Deriving unified address...');
-      
+
       // Dériver les adresses
       const addresses = await synchronizer.deriveUnifiedAddress();
-      
+
       console.log('[ZcashService] Addresses derived:');
       console.log('- Unified:', addresses.unifiedAddress.substring(0, 20) + '...');
       console.log('- Sapling:', addresses.saplingAddress.substring(0, 20) + '...');
       console.log('- Transparent:', addresses.transparentAddress.substring(0, 20) + '...');
-      
+
       const wallet: ZcashWallet = {
         id: alias,
         addresses,
@@ -103,9 +130,9 @@ export class ZcashService {
         createdAt: Date.now(),
         lastSynced: Date.now(),
       };
-      
+
       console.log('[ZcashService] Wallet created successfully');
-      
+
       return { wallet, synchronizer };
     } catch (error) {
       console.error('[ZcashService] Error creating wallet:', error);
@@ -119,7 +146,7 @@ export class ZcashService {
   static async startSync(synchronizer: Synchronizer): Promise<void> {
     try {
       console.log('[ZcashService] Starting sync...');
-      
+
       // S'abonner aux événements
       synchronizer.subscribe({
         onBalanceChanged: (balance) => {
@@ -138,7 +165,7 @@ export class ZcashService {
           console.error('[ZcashService] Sync error:', error);
         },
       });
-      
+
       console.log('[ZcashService] Sync started successfully');
     } catch (error) {
       console.error('[ZcashService] Error starting sync:', error);
@@ -161,31 +188,27 @@ export class ZcashService {
       console.log('- To:', toAddress);
       console.log('- Amount:', amountZec, 'ZEC');
       console.log('- Memo:', memo.substring(0, 50) + '...');
-      
+
       // Convertir ZEC en zatoshi (1 ZEC = 100,000,000 zatoshi)
       const zatoshi = Math.floor(amountZec * 100_000_000).toString();
-      
+
       // Proposer la transaction
       const proposal = await synchronizer.proposeTransfer({
         zatoshi,
         toAddress,
         memo,
       });
-      
+
       console.log('[ZcashService] Proposal created:', proposal.proposalBase64.substring(0, 20) + '...');
       console.log('- Tx count:', proposal.transactionCount);
       console.log('- Total fee:', proposal.totalFee);
-      
-      // Convertir seed phrase en hex
-      const seedBytes = bip39.mnemonicToSeedSync(seedPhrase);
-      const seedHex = seedBytes.toString('hex');
-      
+
       // Créer et broadcaster la transaction
       const result = await synchronizer.createTransfer({
-        mnemonicSeed: seedHex,
+        mnemonicSeed: seedPhrase, // Seed phrase in text format (24 words)
         proposalBase64: proposal.proposalBase64,
       });
-      
+
       if (typeof result === 'string') {
         console.log('[ZcashService] Transaction sent successfully:', result);
         return result; // txId
@@ -230,4 +253,3 @@ export class ZcashService {
     }
   }
 }
-

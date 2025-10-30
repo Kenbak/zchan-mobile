@@ -23,7 +23,8 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.zchanmobile"
+      "package": "com.anonymous.zchanmobile",
+      "minSdkVersion": 27
     },
     "web": {
       "favicon": "./assets/favicon.png"

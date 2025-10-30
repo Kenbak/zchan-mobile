@@ -113,26 +113,42 @@ export class WalletService {
    */
   static async getWallet(): Promise<Wallet | null> {
     try {
+      console.log('[WalletService] Getting wallet from SecureStore...');
+
       const walletId = await SecureStore.getItemAsync(WALLET_ID_KEY);
-      if (!walletId) return null;
+      console.log('[WalletService] Retrieved wallet ID:', walletId ? 'Found' : 'Not found');
 
+      if (!walletId) {
+        console.log('[WalletService] No wallet ID found');
+        return null;
+      }
+
+      console.log('[WalletService] Getting seed phrase...');
       const seedPhrase = await SecureStore.getItemAsync(WALLET_KEY);
-      if (!seedPhrase) return null;
+      console.log('[WalletService] Retrieved seed phrase:', seedPhrase ? 'Found' : 'Not found');
 
+      if (!seedPhrase) {
+        console.log('[WalletService] No seed phrase found');
+        return null;
+      }
+
+      console.log('[WalletService] Deriving address from seed...');
       // Derive address from seed (mock for now)
       const address = this.generateMockZcashAddress();
+      console.log('[WalletService] Address derived');
 
       const wallet: Wallet = {
         id: walletId,
         addresses: [address],
         balance: 0.001, // Mock balance for testing
-        createdAt: 0, // Unknown
+        createdAt: Date.now(),
         lastSynced: Date.now(),
       };
 
+      console.log('[WalletService] Wallet object created successfully');
       return wallet;
     } catch (error) {
-      console.error('Failed to get wallet:', error);
+      console.error('[WalletService] Failed to get wallet:', error);
       return null;
     }
   }
@@ -161,8 +177,15 @@ export class WalletService {
    * Check if wallet exists
    */
   static async hasWallet(): Promise<boolean> {
-    const walletId = await SecureStore.getItemAsync(WALLET_ID_KEY);
-    return walletId !== null;
+    try {
+      console.log('[WalletService] Checking if wallet exists...');
+      const walletId = await SecureStore.getItemAsync(WALLET_ID_KEY);
+      console.log('[WalletService] Wallet ID from store:', walletId ? 'Found' : 'Not found');
+      return walletId !== null;
+    } catch (error) {
+      console.error('[WalletService] Error checking wallet existence:', error);
+      return false;
+    }
   }
 
   /**

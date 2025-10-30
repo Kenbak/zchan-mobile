@@ -1,31 +1,17 @@
 // MUST be imported first for crypto to work in React Native
 import 'react-native-get-random-values';
+import { Buffer } from 'buffer';
+global.Buffer = Buffer;
 
 import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { useFonts, VT323_400Regular } from '@expo-google-fonts/vt323';
+import { View, StyleSheet, Text } from 'react-native';
 import { COLORS } from './src/constants/colors';
 import { useWalletStore } from './src/store/walletStore';
 import { CreateWalletScreen } from './src/screens/Onboarding/CreateWalletScreen';
 import { HomeScreen } from './src/screens/Home/HomeScreen';
-import { BoardScreen } from './src/screens/Board/BoardScreen';
-import { TerminalText } from './src/components/Terminal/TerminalText';
-
-type RootStackParamList = {
-  Home: undefined;
-  Board: { channelId: string };
-};
-
-const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
-  const [fontsLoaded] = useFonts({
-    VT323_400Regular,
-  });
-
   const wallet = useWalletStore((state) => state.wallet);
   const isInitialized = useWalletStore((state) => state.isInitialized);
   const initializeWallet = useWalletStore((state) => state.initializeWallet);
@@ -33,78 +19,65 @@ export default function App() {
 
   useEffect(() => {
     initializeWallet();
-  }, [initializeWallet]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
   useEffect(() => {
-    if (isInitialized && !wallet) {
+    // Only auto-show onboarding if no wallet
+    // Don't auto-hide it (let CreateWalletScreen handle its own flow)
+    if (isInitialized && !wallet && !showOnboarding) {
       setShowOnboarding(true);
     }
-  }, [isInitialized, wallet]);
+  }, [isInitialized, wallet, showOnboarding]);
 
-  if (!fontsLoaded || !isInitialized) {
+  // Loading state
+  if (!isInitialized) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={COLORS.text} />
-        <TerminalText style={styles.loadingText}>
-          {'\n'}&gt; INITIALIZING ZCHAN...
-        </TerminalText>
+      <View style={styles.container}>
+        <Text style={styles.text}>&gt; INITIALIZING...</Text>
       </View>
     );
   }
 
-  // Show onboarding if no wallet
+  // Onboarding
   if (showOnboarding) {
     return (
       <>
-        <StatusBar style="light" backgroundColor={COLORS.bg} />
-        <CreateWalletScreen onComplete={() => setShowOnboarding(false)} />
+        <StatusBar style="light" />
+        <CreateWalletScreen
+          onComplete={async () => {
+            await initializeWallet();
+            setShowOnboarding(false);
+          }}
+        />
       </>
     );
   }
 
+  // Main app (no navigation for now)
   return (
     <>
-      <StatusBar style="light" backgroundColor={COLORS.bg} />
-      <NavigationContainer>
-        <Stack.Navigator
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: COLORS.bg },
-            animation: 'fade',
-          }}
-        >
-          <Stack.Screen name="Home">
-            {({ navigation }) => (
-              <HomeScreen
-                onChannelPress={(channelId) =>
-                  navigation.navigate('Board', { channelId })
-                }
-              />
-            )}
-          </Stack.Screen>
-          <Stack.Screen name="Board">
-            {({ route, navigation }) => (
-              <BoardScreen
-                channelId={route.params.channelId}
-                onBack={() => navigation.goBack()}
-              />
-            )}
-          </Stack.Screen>
-        </Stack.Navigator>
-      </NavigationContainer>
+      <StatusBar style="light" />
+      <HomeScreen
+        onChannelPress={(channelId) => {
+          console.log('Channel pressed:', channelId);
+          // TODO: Navigate to board
+        }}
+      />
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  loadingContainer: {
+  container: {
     flex: 1,
     backgroundColor: COLORS.bg,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  loadingText: {
-    marginTop: 16,
+  text: {
+    color: COLORS.text,
+    fontFamily: 'Courier',
     fontSize: 16,
   },
 });

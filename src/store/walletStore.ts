@@ -27,18 +27,25 @@ export const useWalletStore = create<WalletStore>((set, get) => ({
 
   // Initialize wallet on app start
   initializeWallet: async () => {
+    console.log('[WalletStore] Initializing wallet...');
     set({ isLoading: true, error: null });
 
     try {
+      console.log('[WalletStore] Checking if wallet exists...');
       const hasWallet = await WalletService.hasWallet();
+      console.log('[WalletStore] Has wallet:', hasWallet);
 
       if (hasWallet) {
+        console.log('[WalletStore] Loading wallet...');
         const wallet = await WalletService.getWallet();
+        console.log('[WalletStore] Wallet loaded:', wallet ? 'Success' : 'Failed');
         set({ wallet, isInitialized: true, isLoading: false });
       } else {
+        console.log('[WalletStore] No wallet found, showing onboarding');
         set({ isInitialized: true, isLoading: false });
       }
     } catch (error) {
+      console.error('[WalletStore] Error initializing wallet:', error);
       set({
         error: error instanceof Error ? error.message : 'Failed to initialize wallet',
         isLoading: false,

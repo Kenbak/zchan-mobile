@@ -4,10 +4,9 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  Clipboard,
   Alert,
-  RefreshControl,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { TerminalText } from '../../components/Terminal/TerminalText';
 import { TerminalBox } from '../../components/Terminal/TerminalBox';
 import { COLORS } from '../../constants/colors';
@@ -21,26 +20,38 @@ interface HomeScreenProps {
 export const HomeScreen: React.FC<HomeScreenProps> = ({ onChannelPress }) => {
   const wallet = useWalletStore((state) => state.wallet);
   const refreshBalance = useWalletStore((state) => state.refreshBalance);
-  const [refreshing, setRefreshing] = React.useState(false);
+  const deleteWallet = useWalletStore((state) => state.deleteWallet);
 
   useEffect(() => {
     // Initial balance fetch
     if (wallet) {
       refreshBalance();
     }
-  }, [wallet, refreshBalance]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run once on mount
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await refreshBalance();
-    setRefreshing(false);
-  };
-
-  const handleCopyAddress = () => {
+  const handleCopyAddress = async () => {
     if (wallet?.addresses[0]) {
-      Clipboard.setString(wallet.addresses[0]);
+      await Clipboard.setStringAsync(wallet.addresses[0]);
       Alert.alert('Copied!', 'Address copied to clipboard');
     }
+  };
+
+  const handleDisconnect = () => {
+    Alert.alert(
+      'Disconnect Wallet?',
+      'This will remove your wallet. Make sure you have your seed phrase backed up!',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Disconnect',
+          style: 'destructive',
+          onPress: async () => {
+            await deleteWallet();
+          },
+        },
+      ]
+    );
   };
 
   const formatAddress = (address: string) => {
@@ -49,16 +60,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onChannelPress }) => {
 
   return (
     <View style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.content}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            tintColor={COLORS.text}
-          />
-        }
-      >
+      <ScrollView contentContainerStyle={styles.content}>
         {/* Logo */}
         <TerminalText style={styles.logo}>
           {`
@@ -112,6 +114,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onChannelPress }) => {
                 Send testnet ZEC to your address above.
               </TerminalText>
             )}
+
+            <TouchableOpacity
+              onPress={handleDisconnect}
+              activeOpacity={0.7}
+              style={styles.disconnectButton}
+            >
+              <TerminalText style={styles.disconnectText}>
+                &gt; DISCONNECT WALLET
+              </TerminalText>
+            </TouchableOpacity>
           </TerminalBox>
         )}
 
@@ -168,7 +180,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onChannelPress }) => {
         <TerminalText style={styles.footer}>
           Powered by Zcash • Zypherpunk Hackathon 2025{'\n'}
           {'\n'}
-          [Pull to refresh balance]
+          [Tap a board to view messages]
         </TerminalText>
       </ScrollView>
     </View>
@@ -228,6 +240,17 @@ const styles = StyleSheet.create({
     color: COLORS.warning,
     fontSize: 14,
     lineHeight: 20,
+  },
+  disconnectButton: {
+    marginTop: 16,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: COLORS.textDim,
+    alignItems: 'center',
+  },
+  disconnectText: {
+    fontSize: 14,
+    opacity: 0.6,
   },
   channelList: {
     marginTop: 8,

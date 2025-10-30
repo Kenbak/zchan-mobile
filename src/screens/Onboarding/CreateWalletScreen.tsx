@@ -5,8 +5,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
-  Clipboard,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { TerminalText } from '../../components/Terminal/TerminalText';
 import { TerminalBox } from '../../components/Terminal/TerminalBox';
 import { COLORS } from '../../constants/colors';
@@ -50,8 +50,8 @@ export const CreateWalletScreen: React.FC<{ onComplete: () => void }> = ({
     }
   };
 
-  const handleCopySeed = () => {
-    Clipboard.setString(seedPhrase);
+  const handleCopySeed = async () => {
+    await Clipboard.setStringAsync(seedPhrase);
     Alert.alert('Copied!', 'Seed phrase copied to clipboard');
   };
 

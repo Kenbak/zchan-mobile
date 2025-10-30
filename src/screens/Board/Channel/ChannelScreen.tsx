@@ -9,28 +9,19 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { getChannelById } from '../../constants/channels';
+import { Channel } from '../../config/channels';
 import { useWalletStore } from '../../store/walletStore';
 import { ZcashService } from '../../services/ZcashService';
 
-interface BoardScreenProps {
-  channelId: string;
+interface ChannelScreenProps {
+  channel: Channel;
   onBack: () => void;
 }
 
-export const BoardScreen: React.FC<BoardScreenProps> = ({ channelId, onBack }) => {
-  const channel = getChannelById(channelId);
+export const ChannelScreen: React.FC<ChannelScreenProps> = ({ channel, onBack }) => {
   const wallet = useWalletStore((state) => state.wallet);
   const [message, setMessage] = useState('');
   const [isPosting, setIsPosting] = useState(false);
-
-  if (!channel) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>Channel not found</Text>
-      </View>
-    );
-  }
 
   const handlePostMessage = async () => {
     if (!wallet) {
@@ -51,9 +42,9 @@ export const BoardScreen: React.FC<BoardScreenProps> = ({ channelId, onBack }) =
     setIsPosting(true);
 
     try {
-      console.log('[BoardScreen] Posting message to channel:', channel.id);
-      console.log('[BoardScreen] To address:', channel.address);
-      console.log('[BoardScreen] Message:', message);
+      console.log('[ChannelScreen] Posting message to channel:', channel.id);
+      console.log('[ChannelScreen] To address:', channel.address);
+      console.log('[ChannelScreen] Message:', message);
 
       // Get seed phrase from secure storage
       const { WalletService } = await import('../../services/WalletService');
@@ -69,16 +60,19 @@ export const BoardScreen: React.FC<BoardScreenProps> = ({ channelId, onBack }) =
         throw new Error('Synchronizer not initialized');
       }
 
+      // Amount: Small fee (0.00001 ZEC = 1000 zatoshi minimum for memo)
+      const amount = 0.00001;
+
       // Send transaction with memo
       const txId = await ZcashService.sendShieldedTransaction(
         synchronizer,
         seedPhrase,
         channel.address,
-        channel.cost,
+        amount,
         message
       );
 
-      console.log('[BoardScreen] Message posted! TxId:', txId);
+      console.log('[ChannelScreen] Message posted! TxId:', txId);
 
       Alert.alert(
         'Message Posted! 🎉',
@@ -93,7 +87,7 @@ export const BoardScreen: React.FC<BoardScreenProps> = ({ channelId, onBack }) =
         ]
       );
     } catch (error) {
-      console.error('[BoardScreen] Error posting message:', error);
+      console.error('[ChannelScreen] Error posting message:', error);
       Alert.alert('Error', `Failed to post message: ${error}`);
     } finally {
       setIsPosting(false);
@@ -120,15 +114,15 @@ export const BoardScreen: React.FC<BoardScreenProps> = ({ channelId, onBack }) =
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <Text style={styles.backText}>← Back</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>{channel.icon} {channel.name}</Text>
-        <Text style={styles.balance}>{getBalanceInZec().toFixed(5)} ZEC</Text>
+        <Text style={styles.title}>{channel.name}</Text>
+        <Text style={styles.balance}>{getBalanceInZec().toFixed(4)} ZEC</Text>
       </View>
 
       {/* Messages (placeholder for now) */}
       <ScrollView style={styles.messagesContainer}>
         <View style={styles.messageBox}>
           <Text style={styles.messageText}>
-            {channel.icon} [System] Welcome to {channel.name}
+            [System] Welcome to {channel.name}
           </Text>
           <Text style={styles.messageDescription}>{channel.description}</Text>
           <Text style={styles.messageMeta}>
@@ -139,10 +133,7 @@ export const BoardScreen: React.FC<BoardScreenProps> = ({ channelId, onBack }) =
         <View style={styles.infoBox}>
           <Text style={styles.infoText}>📍 Channel Address:</Text>
           <Text style={styles.addressText}>
-            {channel.address.substring(0, 40)}...
-          </Text>
-          <Text style={styles.infoText}>
-            💰 Cost per post: {channel.cost} ZEC
+            {channel.address.substring(0, 30)}...
           </Text>
           <Text style={styles.infoText}>
             ℹ️ Messages are stored as memos in Zcash shielded transactions
@@ -214,13 +205,6 @@ const styles = StyleSheet.create({
     color: '#00ff00',
     fontFamily: 'Courier New',
     fontSize: 14,
-  },
-  errorText: {
-    color: '#ff0000',
-    fontFamily: 'Courier New',
-    fontSize: 16,
-    textAlign: 'center',
-    marginTop: 50,
   },
   messagesContainer: {
     flex: 1,
@@ -315,3 +299,4 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 });
+

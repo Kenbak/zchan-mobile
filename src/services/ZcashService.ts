@@ -94,6 +94,16 @@ export class ZcashService {
       console.log('[ZcashService] Initializing synchronizer...');
 
       // Créer le synchronizer
+      console.log('[ZcashService] makeSynchronizer config:', {
+        networkName: config.network,
+        defaultHost: config.lightwalletdHost,
+        defaultPort: config.lightwalletdPort,
+        alias,
+        birthdayHeight,
+        newWallet: true,
+        seedPhraseLength: seedPhrase.split(' ').length,
+      });
+
       const synchronizer = await makeSynchronizer({
         networkName: config.network,
         defaultHost: config.lightwalletdHost,
@@ -105,6 +115,9 @@ export class ZcashService {
       });
 
       currentSynchronizer = synchronizer;
+
+      console.log('[ZcashService] Synchronizer created:', typeof synchronizer);
+      console.log('[ZcashService] Synchronizer methods:', Object.keys(synchronizer).join(', '));
 
       console.log('[ZcashService] Deriving unified address...');
 
@@ -147,26 +160,32 @@ export class ZcashService {
     try {
       console.log('[ZcashService] Starting sync...');
 
+      console.log('[ZcashService] Subscribing to events...');
+
       // S'abonner aux événements
       synchronizer.subscribe({
         onBalanceChanged: (balance) => {
-          console.log('[ZcashService] Balance changed:', balance);
+          console.log('[ZcashService] ✅ Balance changed:', balance);
         },
         onStatusChanged: (status) => {
-          console.log('[ZcashService] Status changed:', status.name);
+          console.log('[ZcashService] 🔄 Status changed:', status.name, '- isConnected:', status.isConnected);
         },
         onTransactionsChanged: (transactions) => {
-          console.log('[ZcashService] Transactions changed:', transactions.transactions.length);
+          console.log('[ZcashService] 💸 Transactions changed:', transactions.transactions.length);
         },
         onUpdate: (event) => {
-          console.log('[ZcashService] Sync progress:', event.scanProgress);
+          console.log('[ZcashService] 📊 Sync progress:', event.scanProgress, '- networkHeight:', event.networkBlockHeight);
         },
         onError: (error) => {
-          console.error('[ZcashService] Sync error:', error);
+          console.error('[ZcashService] ❌ Sync error:', error);
         },
       });
 
-      console.log('[ZcashService] Sync started successfully');
+      console.log('[ZcashService] Subscription registered');
+
+      // Le synchronizer démarre automatiquement après makeSynchronizer
+      // Pas besoin d'appeler .start()
+      console.log('[ZcashService] Synchronizer should be running now...');
     } catch (error) {
       console.error('[ZcashService] Error starting sync:', error);
       throw error;

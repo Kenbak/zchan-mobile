@@ -10,45 +10,50 @@ export interface Channel {
 }
 
 // Testnet channels
+// For MVP testing: All channels use the same test address (your wallet)
+// In production, each channel would have its own dedicated address
+// Using Sapling address instead of Unified for better SDK compatibility
+const TEST_ADDRESS = 'ztestsapling1reqyw497yvm7uhx0gzm6s8atq38d6vv0jrvh9mxpukk87lhf5clcqclqvyz02d9jg3xxsqst5lfz';
+
 export const CHANNELS: Channel[] = [
   {
     id: 'general',
     name: '/general/',
     description: 'General discussion - anything goes',
-    address: 'zs1qmmklamqh288s48ekxt07kw5zpl4k9eevxfmqe9cnx2ld0y5k0a3zyn4r4c5afcnu2wsgs0wjwn',
-    cost: 0.0001,
+    address: TEST_ADDRESS, // Using unified address for better compatibility
+    cost: 0.00001, // Minimum for testing
     icon: '💬'
   },
   {
     id: 'whistleblow',
     name: '/whistleblow/',
     description: 'Expose corruption safely - high privacy',
-    address: 'zs1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', // TODO: Generate
-    cost: 0.0005,
+    address: TEST_ADDRESS,
+    cost: 0.00001,
     icon: '🚨'
   },
   {
     id: 'crypto',
     name: '/crypto/',
     description: 'Discuss crypto projects and markets',
-    address: 'zs1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', // TODO: Generate
-    cost: 0.0001,
+    address: TEST_ADDRESS,
+    cost: 0.00001,
     icon: '💰'
   },
   {
     id: 'privacy',
     name: '/privacy/',
     description: 'Privacy tech, tools, and techniques',
-    address: 'zs1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', // TODO: Generate
-    cost: 0.0001,
+    address: TEST_ADDRESS,
+    cost: 0.00001,
     icon: '🔐'
   },
   {
     id: 'zcash',
     name: '/zcash/',
     description: 'All about Zcash - the protocol powering this board',
-    address: 'zs1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', // TODO: Generate
-    cost: 0.0001,
+    address: TEST_ADDRESS,
+    cost: 0.00001,
     icon: '⚡'
   }
 ];

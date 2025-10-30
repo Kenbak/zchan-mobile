@@ -1,10 +1,18 @@
 // Wallet Types
+import { Addresses } from 'react-native-zcash';
 
 export interface Wallet {
   id: string;
   seedPhrase?: string; // Only available during creation/restore
-  addresses: string[]; // Zcash z-addresses
-  balance: number; // in zatoshis
+  addresses: string[] | Addresses; // Zcash z-addresses or unified addresses
+  balance: number | {
+    saplingAvailable: number;
+    saplingTotal: number;
+    orchardAvailable: number;
+    orchardTotal: number;
+    transparentAvailable: number;
+    transparentTotal: number;
+  }; // in zatoshis or detailed balance
   createdAt: number; // timestamp
   lastSynced: number; // timestamp
 }

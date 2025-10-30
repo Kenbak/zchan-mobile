@@ -30,9 +30,37 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onChannelPress }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run once on mount
 
+  const getWalletAddress = () => {
+    if (!wallet) return '';
+    // Handle both old (array) and new (object) address formats
+    if (Array.isArray(wallet.addresses)) {
+      return wallet.addresses[0];
+    } else {
+      // Use unified address (best privacy and compatibility)
+      return wallet.addresses.unifiedAddress || wallet.addresses.saplingAddress;
+    }
+  };
+
+  const getBalanceInZec = () => {
+    if (!wallet) return 0;
+    // Handle both old (number) and new (object) balance formats
+    if (typeof wallet.balance === 'number') {
+      return wallet.balance;
+    } else {
+      // Convert zatoshi to ZEC (1 ZEC = 100,000,000 zatoshi)
+      // Sum all available balances
+      const totalZatoshi =
+        wallet.balance.saplingAvailable +
+        wallet.balance.orchardAvailable +
+        wallet.balance.transparentAvailable;
+      return totalZatoshi / 100_000_000;
+    }
+  };
+
   const handleCopyAddress = async () => {
-    if (wallet?.addresses[0]) {
-      await Clipboard.setStringAsync(wallet.addresses[0]);
+    const address = getWalletAddress();
+    if (address) {
+      await Clipboard.setStringAsync(address);
       Alert.alert('Copied!', 'Address copied to clipboard');
     }
   };
@@ -86,7 +114,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onChannelPress }) => {
             <View style={styles.balanceContainer}>
               <TerminalText style={styles.balanceLabel}>Balance:</TerminalText>
               <TerminalText style={styles.balanceAmount}>
-                {wallet.balance.toFixed(4)} ZEC
+                {getBalanceInZec().toFixed(4)} ZEC
               </TerminalText>
             </View>
 
@@ -99,7 +127,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onChannelPress }) => {
                 Address:
               </TerminalText>
               <TerminalText style={styles.address}>
-                {formatAddress(wallet.addresses[0])}
+                {formatAddress(getWalletAddress())}
               </TerminalText>
               <TerminalText style={styles.copyHint}>
                 {' '}
@@ -107,7 +135,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onChannelPress }) => {
               </TerminalText>
             </TouchableOpacity>
 
-            {wallet.balance === 0 && (
+            {getBalanceInZec() === 0 && (
               <TerminalText style={styles.fundWarning}>
                 {'\n'}
                 ⚠️ You need ZEC to post messages.{'\n'}

@@ -1,6 +1,8 @@
 import * as SecureStore from 'expo-secure-store';
 import * as bip39 from 'bip39';
 import { Wallet } from '../types/wallet';
+import { ZcashService } from './ZcashService';
+import { Synchronizer } from 'react-native-zcash';
 
 const WALLET_KEY = 'zchan_wallet_seed';
 const WALLET_ID_KEY = 'zchan_wallet_id';
@@ -62,13 +64,10 @@ export class WalletService {
    */
   private static async createWalletFromSeed(seedPhrase: string): Promise<Wallet> {
     try {
-      console.log('[WalletService] Generating wallet ID...');
-      // Generate wallet ID
-      const walletId = `zchan_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      console.log('[WalletService] Wallet ID:', walletId);
+      console.log('[WalletService] Creating wallet from seed using ZcashService...');
 
+      // Store seed phrase securely FIRST
       console.log('[WalletService] Storing seed phrase in SecureStore...');
-      // Store encrypted seed phrase
       try {
         await SecureStore.setItemAsync(WALLET_KEY, seedPhrase);
         console.log('[WalletService] Seed phrase stored successfully');
@@ -77,27 +76,37 @@ export class WalletService {
         throw new Error('Failed to store seed phrase securely');
       }
 
+      // Create Zcash wallet using native SDK
+      console.log('[WalletService] Creating Zcash wallet with native SDK...');
+      const { wallet: zcashWallet, synchronizer } = await ZcashService.createWallet(seedPhrase);
+      
+      console.log('[WalletService] Zcash wallet created successfully');
+      console.log('- Wallet ID:', zcashWallet.id);
+      console.log('- Unified address:', zcashWallet.addresses.unifiedAddress.substring(0, 30) + '...');
+      console.log('- Sapling address:', zcashWallet.addresses.saplingAddress.substring(0, 30) + '...');
+
+      // Store wallet ID
       console.log('[WalletService] Storing wallet ID...');
       try {
-        await SecureStore.setItemAsync(WALLET_ID_KEY, walletId);
+        await SecureStore.setItemAsync(WALLET_ID_KEY, zcashWallet.id);
         console.log('[WalletService] Wallet ID stored successfully');
       } catch (storeError) {
         console.error('[WalletService] SecureStore error (ID):', storeError);
         throw new Error('Failed to store wallet ID');
       }
 
-      console.log('[WalletService] Generating Zcash address...');
-      // For Phase 1 (Mock): Generate a realistic-looking Zcash testnet address
-      // In Phase 2, we'll derive this from the seed using Zcash SDK
-      const address = this.generateMockZcashAddress();
-      console.log('[WalletService] Address generated:', address.substring(0, 20) + '...');
+      // Start synchronization in background
+      console.log('[WalletService] Starting blockchain sync...');
+      ZcashService.startSync(synchronizer).catch((err) => {
+        console.error('[WalletService] Sync error:', err);
+      });
 
       const wallet: Wallet = {
-        id: walletId,
-        addresses: [address],
-        balance: 0, // Start with 0, user needs to fund
-        createdAt: Date.now(),
-        lastSynced: Date.now(),
+        id: zcashWallet.id,
+        addresses: zcashWallet.addresses,
+        balance: zcashWallet.balance,
+        createdAt: zcashWallet.createdAt,
+        lastSynced: zcashWallet.lastSynced,
       };
 
       console.log('[WalletService] Wallet object created successfully');

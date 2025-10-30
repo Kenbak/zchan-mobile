@@ -10,12 +10,17 @@ import { COLORS } from './src/constants/colors';
 import { useWalletStore } from './src/store/walletStore';
 import { CreateWalletScreen } from './src/screens/Onboarding/CreateWalletScreen';
 import { HomeScreen } from './src/screens/Home/HomeScreen';
+import { BoardScreen } from './src/screens/Board/BoardScreen';
 
 export default function App() {
   const wallet = useWalletStore((state) => state.wallet);
   const isInitialized = useWalletStore((state) => state.isInitialized);
   const initializeWallet = useWalletStore((state) => state.initializeWallet);
   const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // Navigation state
+  const [currentScreen, setCurrentScreen] = useState<'home' | 'board'>('home');
+  const [selectedBoardId, setSelectedBoardId] = useState<string | null>(null);
 
   useEffect(() => {
     initializeWallet();
@@ -29,6 +34,16 @@ export default function App() {
       setShowOnboarding(true);
     }
   }, [isInitialized, wallet, showOnboarding]);
+
+  const handleChannelPress = (channelId: string) => {
+    setSelectedBoardId(channelId);
+    setCurrentScreen('board');
+  };
+
+  const handleBackToHome = () => {
+    setCurrentScreen('home');
+    setSelectedBoardId(null);
+  };
 
   // Loading state
   if (!isInitialized) {
@@ -54,16 +69,18 @@ export default function App() {
     );
   }
 
-  // Main app (no navigation for now)
+  // Main app with simple navigation
   return (
     <>
       <StatusBar style="light" />
-      <HomeScreen
-        onChannelPress={(channelId) => {
-          console.log('Channel pressed:', channelId);
-          // TODO: Navigate to board
-        }}
-      />
+      {currentScreen === 'home' ? (
+        <HomeScreen onChannelPress={handleChannelPress} />
+      ) : (
+        <BoardScreen
+          channelId={selectedBoardId!}
+          onBack={handleBackToHome}
+        />
+      )}
     </>
   );
 }

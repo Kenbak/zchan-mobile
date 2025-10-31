@@ -12,8 +12,14 @@ import { TerminalBox } from '../../components/Terminal/TerminalBox';
 import { COLORS } from '../../constants/colors';
 import { useWalletStore } from '../../store/walletStore';
 
-export const CreateWalletScreen: React.FC<{ onComplete: () => void }> = ({
+interface CreateWalletScreenProps {
+  onComplete: () => void;
+  onBack?: () => void;
+}
+
+export const CreateWalletScreen: React.FC<CreateWalletScreenProps> = ({
   onComplete,
+  onBack,
 }) => {
   const [step, setStep] = useState<'welcome' | 'generating' | 'show-seed' | 'confirm'>(
     'welcome'
@@ -113,6 +119,18 @@ export const CreateWalletScreen: React.FC<{ onComplete: () => void }> = ({
               No one can recover it. Not us. Not anyone.
             </TerminalText>
           </TerminalBox>
+
+          {onBack && (
+            <TouchableOpacity
+              style={[styles.button, styles.backButton]}
+              onPress={onBack}
+              activeOpacity={0.7}
+            >
+              <TerminalText style={styles.buttonText}>
+                &gt; BACK
+              </TerminalText>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity
             style={styles.button}
@@ -274,6 +292,10 @@ const styles = StyleSheet.create({
     padding: 16,
     marginTop: 20,
     alignItems: 'center',
+  },
+  backButton: {
+    backgroundColor: COLORS.bgLight,
+    borderColor: COLORS.secondary,
   },
   buttonDisabled: {
     opacity: 0.4,

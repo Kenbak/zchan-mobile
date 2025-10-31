@@ -8,7 +8,9 @@ import { StatusBar } from 'expo-status-bar';
 import { View, StyleSheet, Text } from 'react-native';
 import { COLORS } from './src/constants/colors';
 import { useWalletStore } from './src/store/walletStore';
+import { WalletSetupScreen } from './src/screens/Onboarding/WalletSetupScreen';
 import { CreateWalletScreen } from './src/screens/Onboarding/CreateWalletScreen';
+import { ImportWalletScreen } from './src/screens/Onboarding/ImportWalletScreen';
 import { HomeScreen } from './src/screens/Home/HomeScreen';
 import { BoardScreen } from './src/screens/Board/BoardScreen';
 
@@ -17,6 +19,7 @@ export default function App() {
   const isInitialized = useWalletStore((state) => state.isInitialized);
   const initializeWallet = useWalletStore((state) => state.initializeWallet);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [onboardingScreen, setOnboardingScreen] = useState<'setup' | 'create' | 'import'>('setup');
 
   // Navigation state
   const [currentScreen, setCurrentScreen] = useState<'home' | 'board'>('home');
@@ -56,15 +59,33 @@ export default function App() {
 
   // Onboarding
   if (showOnboarding) {
+    const handleWalletComplete = async () => {
+      await initializeWallet();
+      setShowOnboarding(false);
+      setOnboardingScreen('setup'); // Reset for next time
+    };
+
     return (
       <>
         <StatusBar style="light" />
-        <CreateWalletScreen
-          onComplete={async () => {
-            await initializeWallet();
-            setShowOnboarding(false);
-          }}
-        />
+        {onboardingScreen === 'setup' && (
+          <WalletSetupScreen
+            onCreateNew={() => setOnboardingScreen('create')}
+            onImportExisting={() => setOnboardingScreen('import')}
+          />
+        )}
+        {onboardingScreen === 'create' && (
+          <CreateWalletScreen
+            onComplete={handleWalletComplete}
+            onBack={() => setOnboardingScreen('setup')}
+          />
+        )}
+        {onboardingScreen === 'import' && (
+          <ImportWalletScreen
+            onComplete={handleWalletComplete}
+            onBack={() => setOnboardingScreen('setup')}
+          />
+        )}
       </>
     );
   }

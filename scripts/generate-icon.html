@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zchan ASCII Icon Generator</title>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: #00ff00;
+            padding: 20px;
+        }
+        canvas {
+            border: 2px solid #00ff00;
+            margin-bottom: 10px;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+        button {
+            background-color: #00ff00;
+            color: #0a0a0a;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 5px;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #00cc00;
+        }
+        h1 {
+            margin-bottom: 30px;
+            font-family: "Courier New", monospace;
+        }
+        .preview {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .icon-container {
+            text-align: center;
+        }
+        .icon-container p {
+            margin: 5px 0;
+            font-family: "Courier New", monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>⚡ ZCHAN ASCII ICON GENERATOR ⚡</h1>
+
+    <div class="preview">
+        <div class="icon-container">
+            <p>1024x1024 (iOS/Android)</p>
+            <canvas id="icon1024" width="1024" height="1024"></canvas>
+            <button onclick="downloadIcon(1024)">DOWNLOAD 1024x1024</button>
+        </div>
+    </div>
+
+    <div class="preview">
+        <div class="icon-container">
+            <p>512x512</p>
+            <canvas id="icon512" width="512" height="512"></canvas>
+            <button onclick="downloadIcon(512)">DOWNLOAD 512x512</button>
+        </div>
+
+        <div class="icon-container">
+            <p>192x192</p>
+            <canvas id="icon192" width="192" height="192"></canvas>
+            <button onclick="downloadIcon(192)">DOWNLOAD 192x192</button>
+        </div>
+    </div>
+
+    <script>
+        // ASCII art pour le Z - style tableau élémentaire (propre et droit)
+        const asciiArt = `
+███████████
+       ███
+      ███
+     ███
+    ███
+   ███
+  ███
+ ███
+███████████
+        `.trim();
+
+        function drawIcon(size) {
+            const canvas = document.getElementById(`icon${size}`);
+            const ctx = canvas.getContext('2d');
+
+            // Clear
+            ctx.clearRect(0, 0, size, size);
+
+            // Background noir pur
+            ctx.fillStyle = '#0a0a0a';
+            ctx.fillRect(0, 0, size, size);
+
+            // Calculer la taille de police pour que le Z rentre bien (style tableau)
+            const lines = asciiArt.split('\n');
+            const longestLine = Math.max(...lines.map(l => l.length));
+            const fontSize = Math.floor(size / (longestLine * 0.75));
+
+            // Dessiner le Z en ASCII
+            ctx.fillStyle = '#00ff00';
+            ctx.font = `${fontSize}px "Courier New", "SF Mono", Monaco, monospace`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            const lineHeight = fontSize * 1.1;
+            const totalHeight = lines.length * lineHeight;
+            const startY = (size - totalHeight) / 2;
+
+            lines.forEach((line, i) => {
+                ctx.fillText(line, size / 2, startY + (i + 0.5) * lineHeight);
+            });
+
+            // Ajouter "CHAN" en dessous avec style simple
+            const chanFontSize = fontSize * 0.35;
+            ctx.font = `bold ${chanFontSize}px "Courier New", "SF Mono", Monaco, monospace`;
+            ctx.globalAlpha = 0.8;
+            ctx.fillText('CHAN', size / 2, startY + totalHeight + chanFontSize * 1.8);
+            ctx.globalAlpha = 1;
+
+            // Ajouter des petits détails de coins style terminal
+            const cornerSize = size * 0.02;
+            ctx.strokeStyle = '#00ff00';
+            ctx.lineWidth = size * 0.003;
+            ctx.globalAlpha = 0.5;
+
+            // Coin haut gauche
+            ctx.beginPath();
+            ctx.moveTo(size * 0.05, size * 0.08);
+            ctx.lineTo(size * 0.05, size * 0.05);
+            ctx.lineTo(size * 0.08, size * 0.05);
+            ctx.stroke();
+
+            // Coin haut droit
+            ctx.beginPath();
+            ctx.moveTo(size * 0.92, size * 0.05);
+            ctx.lineTo(size * 0.95, size * 0.05);
+            ctx.lineTo(size * 0.95, size * 0.08);
+            ctx.stroke();
+
+            // Coin bas gauche
+            ctx.beginPath();
+            ctx.moveTo(size * 0.05, size * 0.92);
+            ctx.lineTo(size * 0.05, size * 0.95);
+            ctx.lineTo(size * 0.08, size * 0.95);
+            ctx.stroke();
+
+            // Coin bas droit
+            ctx.beginPath();
+            ctx.moveTo(size * 0.92, size * 0.95);
+            ctx.lineTo(size * 0.95, size * 0.95);
+            ctx.lineTo(size * 0.95, size * 0.92);
+            ctx.stroke();
+
+            ctx.globalAlpha = 1;
+        }
+
+        function downloadIcon(size) {
+            const canvas = document.getElementById(`icon${size}`);
+            const link = document.createElement('a');
+            link.download = `zchan-icon-${size}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        // Draw all icons on load
+        drawIcon(1024);
+        drawIcon(512);
+        drawIcon(192);
+    </script>
+</body>
+</html>

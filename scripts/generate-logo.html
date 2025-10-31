@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZCHAN Logo Generator</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #0a0a0a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Courier New', monospace;
+        }
+
+        #canvas-container {
+            text-align: center;
+        }
+
+        canvas {
+            border: 1px solid #00ff00;
+            background: #0a0a0a;
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 12px 24px;
+            background: #00ff00;
+            color: #0a0a0a;
+            border: none;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #00ffff;
+        }
+
+        .tagline {
+            color: #00ff00;
+            opacity: 0.7;
+            margin-top: 20px;
+            letter-spacing: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container">
+        <canvas id="logo-canvas" width="1200" height="600"></canvas>
+        <button onclick="downloadLogo()">📥 DOWNLOAD PNG FOR TWITTER</button>
+        <div class="tagline">ANONYMOUS • IMMUTABLE • UNCENSORABLE</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('logo-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // ZCHAN ASCII Logo
+        const logo = `
+███████╗ ██████╗██╗  ██╗ █████╗ ███╗   ██╗
+╚══███╔╝██╔════╝██║  ██║██╔══██╗████╗  ██║
+  ███╔╝ ██║     ███████║███████║██╔██╗ ██║
+ ███╔╝  ██║     ██╔══██║██╔══██║██║╚██╗██║
+███████╗╚██████╗██║  ██║██║  ██║██║ ╚████║
+╚══════╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝
+        `.trim();
+
+        const tagline = 'ANONYMOUS • IMMUTABLE • UNCENSORABLE';
+
+        // Draw background
+        ctx.fillStyle = '#0a0a0a';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw logo with glow effect
+        ctx.font = 'bold 32px "Courier New", monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        const lines = logo.split('\n');
+        const lineHeight = 42;
+        const logoHeight = lines.length * lineHeight;
+        const taglineHeight = 30;
+        const totalHeight = logoHeight + taglineHeight + 40;
+
+        // Center vertically
+        const startY = (canvas.height - totalHeight) / 2 + 20;
+
+        // Draw logo (NO glow - clean terminal style, sans-serif monospace)
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = '#00ff00';
+        ctx.font = 'bold 30px "SF Mono", Monaco, Consolas, "Courier New", monospace';
+        ctx.textAlign = 'center';
+
+        // Draw each line of the logo
+        lines.forEach((line, index) => {
+            const y = startY + index * lineHeight;
+            ctx.fillText(line, canvas.width / 2, y);
+        });
+
+        // Draw tagline below logo (same green, 70% opacity, NOT bold)
+        ctx.font = '20px "SF Mono", Monaco, Consolas, "Courier New", monospace';
+        ctx.fillStyle = 'rgba(0, 255, 0, 0.7)';
+        const taglineY = startY + logoHeight + 50;
+        ctx.fillText(tagline, canvas.width / 2, taglineY);
+
+        function downloadLogo() {
+            const link = document.createElement('a');
+            link.download = 'zchan-logo.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        // Auto-download on load (optional)
+        // downloadLogo();
+    </script>
+</body>
+</html>

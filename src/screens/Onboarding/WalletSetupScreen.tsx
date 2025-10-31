@@ -3,6 +3,7 @@ import { View, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { TerminalText } from '../../components/Terminal/TerminalText';
 import { TerminalBox } from '../../components/Terminal/TerminalBox';
 import { COLORS } from '../../constants/colors';
+import { ZCHAN_LOGO } from '../../constants/logo';
 
 interface WalletSetupScreenProps {
   onCreateNew: () => void;
@@ -18,14 +19,7 @@ export const WalletSetupScreen: React.FC<WalletSetupScreenProps> = ({
       <ScrollView contentContainerStyle={styles.content}>
         {/* Logo */}
         <TerminalText style={styles.logo}>
-          {`
-███████╗███████╗ █████╗ ███╗   ██╗
-╚══███╔╝██╔════╝██╔══██╗████╗  ██║
-  ███╔╝ █████╗  ███████║██╔██╗ ██║
- ███╔╝  ██╔══╝  ██╔══██║██║╚██╗██║
-███████╗███████╗██║  ██║██║ ╚████║
-╚══════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝
-          `}
+          {ZCHAN_LOGO}
         </TerminalText>
 
         <TerminalText style={styles.systemMessage}>
@@ -88,10 +82,10 @@ const styles = StyleSheet.create({
   },
   logo: {
     color: COLORS.primary,
-    fontSize: 20,
+    fontSize: 10,
     textAlign: 'center',
     marginBottom: 20,
-    lineHeight: 18,
+    lineHeight: 12,
   },
   systemMessage: {
     color: COLORS.text,

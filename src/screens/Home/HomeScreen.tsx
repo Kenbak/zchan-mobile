@@ -12,6 +12,7 @@ import { TerminalBox } from '../../components/Terminal/TerminalBox';
 import { COLORS } from '../../constants/colors';
 import { CHANNELS } from '../../constants/channels';
 import { useWalletStore } from '../../store/walletStore';
+import { ZCHAN_LOGO } from '../../constants/logo';
 
 interface HomeScreenProps {
   onChannelPress: (channelId: string) => void;
@@ -92,17 +93,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onChannelPress }) => {
       <ScrollView contentContainerStyle={styles.content}>
         {/* Logo */}
         <TerminalText style={styles.logo}>
-          {`
-╔═══════════════════════════════════╗
-║  ▒███████▒ ▄████▄   ██░ ██  ▄▄▄  ║
-║  ▒ ▒ ▒ ▄▀░▒██▀ ▀█  ▓██░ ██▒▒████▄║
-║  ░ ▒ ▄▀▒░ ▒▓█    ▄ ▒██▀▀██░▒██  █║
-║    ▄▀▒   ░▒▓▓▄ ▄██▒░▓█ ░██ ░██▄▄ ║
-║  ▒███████▒▒ ▓███▀ ░░▓█▒░██▓ ▓█  ▓║
-╚═══════════════════════════════════╝
-
-   ANONYMOUS • IMMUTABLE • UNCENSORABLE
-          `}
+          {ZCHAN_LOGO}
+        </TerminalText>
+        <TerminalText style={styles.tagline}>
+          ANONYMOUS • IMMUTABLE • UNCENSORABLE
         </TerminalText>
 
         {/* Wallet Info */}
@@ -227,8 +221,15 @@ const styles = StyleSheet.create({
   logo: {
     textAlign: 'center',
     fontSize: 10,
-    marginBottom: 20,
+    marginBottom: 10,
     lineHeight: 12,
+  },
+  tagline: {
+    textAlign: 'center',
+    fontSize: 10,
+    opacity: 0.7,
+    marginBottom: 20,
+    letterSpacing: 2,
   },
   sectionTitle: {
     fontSize: 18,

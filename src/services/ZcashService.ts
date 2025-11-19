@@ -168,8 +168,8 @@ export class ZcashService {
 
       console.log('[ZcashService] Wallet created successfully');
 
-      return { 
-        wallet, 
+      return {
+        wallet,
         synchronizer,
         alias,
         birthdayHeight
@@ -248,6 +248,12 @@ export class ZcashService {
       const zatoshi = Math.floor(amountZec * 100_000_000).toString();
 
       // Proposer la transaction
+      console.log('[ZcashService] Calling proposeTransfer with:', {
+        zatoshi,
+        toAddress: toAddress.substring(0, 20) + '...',
+        memoLength: memo.length,
+      });
+
       const proposal = await synchronizer.proposeTransfer({
         zatoshi,
         toAddress,
@@ -271,7 +277,13 @@ export class ZcashService {
         throw new Error(result.errorMessage || 'Transaction failed');
       }
     } catch (error) {
-      console.error('[ZcashService] Error sending transaction:', error);
+      console.error('[ZcashService] ❌ Error sending transaction:', error);
+      console.error('[ZcashService] ❌ Error type:', typeof error);
+      console.error('[ZcashService] ❌ Error details:', JSON.stringify(error, null, 2));
+      if (error instanceof Error) {
+        console.error('[ZcashService] ❌ Error message:', error.message);
+        console.error('[ZcashService] ❌ Error stack:', error.stack);
+      }
       throw error;
     }
   }

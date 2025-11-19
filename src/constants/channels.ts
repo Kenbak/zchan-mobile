@@ -12,8 +12,8 @@ export interface Channel {
 // Testnet channels
 // For MVP testing: All channels use the same test address (your wallet)
 // In production, each channel would have its own dedicated address
-// Using Sapling address instead of Unified for better SDK compatibility
-const TEST_ADDRESS = 'ztestsapling1reqyw497yvm7uhx0gzm6s8atq38d6vv0jrvh9mxpukk87lhf5clcqclqvyz02d9jg3xxsqst5lfz';
+// Using Unified address for better compatibility with latest SDK
+const TEST_ADDRESS = 'utest1qz2c9w98v9xavajc8ml5zd459902alt62tndt3sktsx0hd3gd20evhwfrqq834335a7lmw4a4mx79pnhczxvs50w5cfffelsuvtl9fer';
 
 export const CHANNELS: Channel[] = [
   {

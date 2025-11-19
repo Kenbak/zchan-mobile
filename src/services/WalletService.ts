@@ -195,6 +195,31 @@ export class WalletService {
   }
 
   /**
+   * Export Unified Full Viewing Key (UFVK)
+   * Allows viewing all transactions without spending ability
+   */
+  static async exportViewingKey(): Promise<string> {
+    try {
+      console.log('[WalletService] Exporting viewing key...');
+
+      // Récupérer la seed phrase depuis SecureStore
+      const seedPhrase = await SecureStore.getItemAsync(WALLET_KEY);
+      if (!seedPhrase) {
+        throw new Error('No wallet found');
+      }
+
+      // Dériver la viewing key
+      const ufvk = await ZcashService.deriveViewingKey(seedPhrase, 'testnet');
+
+      console.log('[WalletService] ✅ Viewing key exported successfully');
+      return ufvk;
+    } catch (error) {
+      console.error('[WalletService] Error exporting viewing key:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Delete wallet (DANGER!)
    */
   static async deleteWallet(): Promise<void> {

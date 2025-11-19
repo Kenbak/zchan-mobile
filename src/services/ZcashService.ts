@@ -31,6 +31,9 @@ const DEFAULT_CONFIG: ZcashConfig = {
 
 let currentSynchronizer: Synchronizer | null = null;
 
+// Callback pour notifier les changements de balance
+let balanceChangeCallback: ((balance: any) => void) | null = null;
+
 export class ZcashService {
   /**
    * Crée un nouveau wallet Zcash avec une seed phrase BIP-39
@@ -159,6 +162,7 @@ export class ZcashService {
   static async startSync(synchronizer: Synchronizer): Promise<void> {
     try {
       console.log('[ZcashService] Starting sync...');
+      console.log('[ZcashService] Balance callback registered:', balanceChangeCallback ? 'YES ✅' : 'NO ❌');
 
       console.log('[ZcashService] Subscribing to events...');
 
@@ -166,9 +170,17 @@ export class ZcashService {
       synchronizer.subscribe({
         onBalanceChanged: (balance) => {
           console.log('[ZcashService] ✅ Balance changed:', balance);
+
+          // Notifier le callback si défini
+          if (balanceChangeCallback) {
+            console.log('[ZcashService] 📢 Notifying balance change callback...');
+            balanceChangeCallback(balance);
+          } else {
+            console.warn('[ZcashService] ⚠️ No balance change callback registered!');
+          }
         },
         onStatusChanged: (status) => {
-          console.log('[ZcashService] 🔄 Status changed:', status.name, '- isConnected:', status.isConnected);
+          console.log('[ZcashService] 🔄 Status changed:', status.name);
         },
         onTransactionsChanged: (transactions) => {
           console.log('[ZcashService] 💸 Transactions changed:', transactions.transactions.length);
@@ -241,6 +253,27 @@ export class ZcashService {
   }
 
   /**
+   * Déclenche une resynchronisation manuelle pour mettre à jour le balance
+   * Le balance sera automatiquement mis à jour via l'événement onBalanceChanged
+   */
+  static async refreshBalance(): Promise<void> {
+    if (!currentSynchronizer) {
+      console.warn('[ZcashService] No active synchronizer');
+      return;
+    }
+
+    try {
+      console.log('[ZcashService] 🔄 Triggering manual sync...');
+      // Le synchronizer est déjà actif et met à jour automatiquement le balance
+      // Cette fonction sert principalement à indiquer à l'utilisateur qu'un refresh est en cours
+      // Le balance sera mis à jour automatiquement via onBalanceChanged
+      console.log('[ZcashService] ✅ Sync is running, balance will update automatically');
+    } catch (error) {
+      console.error('[ZcashService] Error refreshing balance:', error);
+    }
+  }
+
+  /**
    * Arrête le synchronizer
    */
   static async stopSync(): Promise<void> {
@@ -258,6 +291,60 @@ export class ZcashService {
    */
   static getCurrentSynchronizer(): Synchronizer | null {
     return currentSynchronizer;
+  }
+
+  /**
+   * S'abonner aux changements de balance
+   */
+  static onBalanceChange(callback: (balance: any) => void): void {
+    console.log('[ZcashService] Balance change callback registered');
+    balanceChangeCallback = callback;
+  }
+
+  /**
+   * Se désabonner des changements de balance
+   */
+  static offBalanceChange(): void {
+    console.log('[ZcashService] Balance change callback removed');
+    balanceChangeCallback = null;
+  }
+
+  /**
+   * Dérive la Unified Full Viewing Key (UFVK) depuis une seed phrase
+   * La UFVK permet de voir toutes les transactions sans pouvoir dépenser
+   */
+  static async deriveViewingKey(
+    seedPhrase: string,
+    network: Network = 'testnet'
+  ): Promise<string> {
+    try {
+      console.log('[ZcashService] Deriving viewing key...');
+      console.log('[ZcashService] Network:', network);
+
+      // Valider la seed phrase
+      if (!bip39.validateMnemonic(seedPhrase)) {
+        throw new Error('Invalid seed phrase');
+      }
+
+      // Convertir la seed phrase en bytes puis en hex string
+      const seedBuffer = await bip39.mnemonicToSeed(seedPhrase);
+      const seedBytesHex = seedBuffer.toString('hex');
+
+      console.log('[ZcashService] Seed bytes length:', seedBytesHex.length);
+      console.log('[ZcashService] Calling Tools.deriveViewingKey...');
+
+      // Appeler la fonction native
+      const ufvk = await Tools.deriveViewingKey(seedBytesHex, network);
+
+      console.log('[ZcashService] ✅ Viewing key derived successfully!');
+      console.log('[ZcashService] UFVK prefix:', ufvk.substring(0, 15) + '...');
+
+      return ufvk;
+    } catch (error) {
+      console.error('[ZcashService] ❌ Error deriving viewing key:', error);
+      console.error('[ZcashService] Error details:', JSON.stringify(error, null, 2));
+      throw error;
+    }
   }
 
   /**

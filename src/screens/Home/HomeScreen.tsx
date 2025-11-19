@@ -21,9 +21,8 @@ interface HomeScreenProps {
 export const HomeScreen: React.FC<HomeScreenProps> = ({ onChannelPress }) => {
   const wallet = useWalletStore((state) => state.wallet);
   const deleteWallet = useWalletStore((state) => state.deleteWallet);
-
-  // Balance is now automatically updated by the Zcash SDK synchronizer
-  // No need to manually refresh
+  const refreshBalance = useWalletStore((state) => state.refreshBalance);
+  const isLoading = useWalletStore((state) => state.isLoading);
 
   const getWalletAddress = () => {
     if (!wallet) return '';
@@ -64,6 +63,37 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onChannelPress }) => {
     if (address) {
       await Clipboard.setStringAsync(address);
       Alert.alert('Copied!', 'Address copied to clipboard');
+    }
+  };
+
+  const handleRefreshBalance = async () => {
+    console.log('[HomeScreen] Refresh button pressed');
+    await refreshBalance();
+    Alert.alert('Balance Refreshed', 'Your balance has been updated');
+  };
+
+  const handleExportViewingKey = async () => {
+    try {
+      console.log('[HomeScreen] Exporting viewing key...');
+      const { WalletService } = await import('../../services/WalletService');
+      const ufvk = await WalletService.exportViewingKey();
+
+      await Clipboard.setStringAsync(ufvk);
+
+      Alert.alert(
+        'Viewing Key Exported! 🔑',
+        'Your Unified Full Viewing Key (UFVK) has been copied to clipboard.\n\n' +
+        '✅ This key allows viewing ALL your transactions without spending ability.\n\n' +
+        '⚠️ Do NOT share your seed phrase - only share this viewing key!',
+        [{ text: 'OK' }]
+      );
+    } catch (error) {
+      console.error('[HomeScreen] Failed to export viewing key:', error);
+      Alert.alert(
+        'Error',
+        `Failed to export viewing key:\n\n${error instanceof Error ? error.message : 'Unknown error'}`,
+        [{ text: 'OK' }]
+      );
     }
   };
 
@@ -137,6 +167,29 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onChannelPress }) => {
                 Send testnet ZEC to your address above.
               </TerminalText>
             )}
+
+            <View style={styles.buttonRow}>
+              <TouchableOpacity
+                onPress={handleRefreshBalance}
+                activeOpacity={0.7}
+                style={[styles.actionButton, isLoading && styles.buttonDisabled]}
+                disabled={isLoading}
+              >
+                <TerminalText style={styles.actionButtonText}>
+                  {isLoading ? '⏳ REFRESHING...' : '🔄 REFRESH BALANCE'}
+                </TerminalText>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={handleExportViewingKey}
+                activeOpacity={0.7}
+                style={styles.actionButton}
+              >
+                <TerminalText style={styles.actionButtonText}>
+                  🔑 EXPORT UFVK
+                </TerminalText>
+              </TouchableOpacity>
+            </View>
 
             <TouchableOpacity
               onPress={handleDisconnect}
@@ -270,6 +323,27 @@ const styles = StyleSheet.create({
     color: COLORS.warning,
     fontSize: 14,
     lineHeight: 20,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 16,
+  },
+  actionButton: {
+    flex: 1,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+    alignItems: 'center',
+    backgroundColor: COLORS.bgLight,
+  },
+  actionButtonText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  buttonDisabled: {
+    opacity: 0.5,
+    borderColor: COLORS.textDim,
   },
   disconnectButton: {
     marginTop: 16,

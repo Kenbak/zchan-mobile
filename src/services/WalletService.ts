@@ -6,6 +6,8 @@ import { Synchronizer } from 'react-native-zcash';
 
 const WALLET_KEY = 'zchan_wallet_seed';
 const WALLET_ID_KEY = 'zchan_wallet_id';
+const WALLET_ALIAS_KEY = 'zchan_wallet_alias';
+const WALLET_BIRTHDAY_KEY = 'zchan_wallet_birthday';
 
 export class WalletService {
   /**
@@ -76,23 +78,30 @@ export class WalletService {
         throw new Error('Failed to store seed phrase securely');
       }
 
-      // Create Zcash wallet using native SDK
+      // Create Zcash wallet using native SDK (new wallet)
       console.log('[WalletService] Creating Zcash wallet with native SDK...');
-      const { wallet: zcashWallet, synchronizer } = await ZcashService.createWallet(seedPhrase);
+      const { wallet: zcashWallet, synchronizer, alias, birthdayHeight } = await ZcashService.createWallet(
+        seedPhrase,
+        true // newWallet = true for first time creation
+      );
 
       console.log('[WalletService] Zcash wallet created successfully');
       console.log('- Wallet ID:', zcashWallet.id);
+      console.log('- Alias:', alias);
+      console.log('- Birthday height:', birthdayHeight);
       console.log('- Unified address:', zcashWallet.addresses.unifiedAddress.substring(0, 30) + '...');
       console.log('- Sapling address:', zcashWallet.addresses.saplingAddress.substring(0, 30) + '...');
 
-      // Store wallet ID
-      console.log('[WalletService] Storing wallet ID...');
+      // Store wallet ID, alias, and birthday height
+      console.log('[WalletService] Storing wallet metadata...');
       try {
         await SecureStore.setItemAsync(WALLET_ID_KEY, zcashWallet.id);
-        console.log('[WalletService] Wallet ID stored successfully');
+        await SecureStore.setItemAsync(WALLET_ALIAS_KEY, alias);
+        await SecureStore.setItemAsync(WALLET_BIRTHDAY_KEY, birthdayHeight.toString());
+        console.log('[WalletService] Wallet metadata stored successfully');
       } catch (storeError) {
-        console.error('[WalletService] SecureStore error (ID):', storeError);
-        throw new Error('Failed to store wallet ID');
+        console.error('[WalletService] SecureStore error:', storeError);
+        throw new Error('Failed to store wallet metadata');
       }
 
       // Start synchronization in background
@@ -141,12 +150,26 @@ export class WalletService {
         return null;
       }
 
+      console.log('[WalletService] Getting stored alias and birthday height...');
+      const storedAlias = await SecureStore.getItemAsync(WALLET_ALIAS_KEY);
+      const storedBirthday = await SecureStore.getItemAsync(WALLET_BIRTHDAY_KEY);
+      
       console.log('[WalletService] Re-initializing Zcash wallet with existing seed...');
+      console.log('- Stored alias:', storedAlias || 'Not found (will use default)');
+      console.log('- Stored birthday:', storedBirthday || 'Not found (will fetch new)');
+      
       // Re-create the wallet using ZcashService with the stored seed
-      const { wallet: zcashWallet, synchronizer } = await ZcashService.createWallet(seedPhrase);
+      // Use newWallet: false to reuse existing sync data
+      const { wallet: zcashWallet, synchronizer } = await ZcashService.createWallet(
+        seedPhrase,
+        false, // newWallet = false to resume sync
+        storedAlias || undefined,
+        storedBirthday ? parseInt(storedBirthday) : undefined
+      );
 
       console.log('[WalletService] Zcash wallet re-initialized successfully');
       console.log('- Unified address:', zcashWallet.addresses.unifiedAddress.substring(0, 30) + '...');
+      console.log('- Will resume sync from last position');
 
       // Start synchronization in background
       console.log('[WalletService] Starting blockchain sync...');
@@ -225,6 +248,8 @@ export class WalletService {
   static async deleteWallet(): Promise<void> {
     await SecureStore.deleteItemAsync(WALLET_KEY);
     await SecureStore.deleteItemAsync(WALLET_ID_KEY);
+    await SecureStore.deleteItemAsync(WALLET_ALIAS_KEY);
+    await SecureStore.deleteItemAsync(WALLET_BIRTHDAY_KEY);
   }
 
   /**

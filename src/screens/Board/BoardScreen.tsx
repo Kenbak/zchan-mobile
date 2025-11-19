@@ -9,6 +9,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { getChannelById } from '../../constants/channels';
 import { useWalletStore } from '../../store/walletStore';
 import { ZcashService } from '../../services/ZcashService';
@@ -26,9 +27,9 @@ export const BoardScreen: React.FC<BoardScreenProps> = ({ channelId, onBack }) =
 
   if (!channel) {
     return (
-      <View style={styles.container}>
+      <SafeAreaView style={styles.container}>
         <Text style={styles.errorText}>Channel not found</Text>
-      </View>
+      </SafeAreaView>
     );
   }
 
@@ -114,7 +115,7 @@ export const BoardScreen: React.FC<BoardScreenProps> = ({ channelId, onBack }) =
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
@@ -180,7 +181,7 @@ export const BoardScreen: React.FC<BoardScreenProps> = ({ channelId, onBack }) =
           </TouchableOpacity>
         </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 

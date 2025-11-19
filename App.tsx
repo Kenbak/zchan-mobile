@@ -6,6 +6,7 @@ global.Buffer = Buffer;
 import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { View, StyleSheet, Text } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { COLORS } from './src/constants/colors';
 import { useWalletStore } from './src/store/walletStore';
 import { WalletSetupScreen } from './src/screens/Onboarding/WalletSetupScreen';
@@ -51,9 +52,11 @@ export default function App() {
   // Loading state
   if (!isInitialized) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.text}>&gt; INITIALIZING...</Text>
-      </View>
+      <SafeAreaProvider>
+        <View style={styles.container}>
+          <Text style={styles.text}>&gt; INITIALIZING...</Text>
+        </View>
+      </SafeAreaProvider>
     );
   }
 
@@ -66,7 +69,7 @@ export default function App() {
     };
 
     return (
-      <>
+      <SafeAreaProvider>
         <StatusBar style="light" />
         {onboardingScreen === 'setup' && (
           <WalletSetupScreen
@@ -86,13 +89,13 @@ export default function App() {
             onBack={() => setOnboardingScreen('setup')}
           />
         )}
-      </>
+      </SafeAreaProvider>
     );
   }
 
   // Main app with simple navigation
   return (
-    <>
+    <SafeAreaProvider>
       <StatusBar style="light" />
       {currentScreen === 'home' ? (
         <HomeScreen onChannelPress={handleChannelPress} />
@@ -102,7 +105,7 @@ export default function App() {
           onBack={handleBackToHome}
         />
       )}
-    </>
+    </SafeAreaProvider>
   );
 }
 

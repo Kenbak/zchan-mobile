@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Clipboard from 'expo-clipboard';
 import { TerminalText } from '../../components/Terminal/TerminalText';
 import { TerminalBox } from '../../components/Terminal/TerminalBox';
@@ -119,7 +120,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onChannelPress }) => {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
         {/* Logo */}
         <TerminalText style={styles.logo}>
@@ -259,7 +260,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onChannelPress }) => {
           [Tap a board to view messages]
         </TerminalText>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 

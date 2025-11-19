@@ -37,62 +37,81 @@ let balanceChangeCallback: ((balance: any) => void) | null = null;
 export class ZcashService {
   /**
    * Crée un nouveau wallet Zcash avec une seed phrase BIP-39
+   * @param seedPhrase - BIP-39 seed phrase (24 words)
+   * @param newWallet - true = new wallet (will scan from birthday), false = existing wallet (resume sync)
+   * @param existingAlias - alias for existing wallet (to reuse sync DB)
+   * @param existingBirthdayHeight - birthday height for existing wallet
+   * @param config - Zcash network config
    */
   static async createWallet(
     seedPhrase: string,
+    newWallet: boolean = true,
+    existingAlias?: string,
+    existingBirthdayHeight?: number,
     config: ZcashConfig = DEFAULT_CONFIG
-  ): Promise<{ wallet: ZcashWallet; synchronizer: Synchronizer }> {
+  ): Promise<{ wallet: ZcashWallet; synchronizer: Synchronizer; alias: string; birthdayHeight: number }> {
     try {
       console.log('[ZcashService] Creating wallet...');
+      console.log('- New wallet:', newWallet);
+      console.log('- Existing alias:', existingAlias || 'None');
+      console.log('- Existing birthday:', existingBirthdayHeight || 'None');
 
       // Valider la seed phrase
       if (!bip39.validateMnemonic(seedPhrase)) {
         throw new Error('Invalid seed phrase');
       }
 
-      console.log('[ZcashService] Getting birthday height...');
+      // Determine birthday height
+      let birthdayHeight: number;
 
-      // Obtenir le birthday height avec retry et timeout augmenté
-      const FALLBACK_BIRTHDAY_HEIGHT = 2800000; // October 2024 testnet checkpoint
-      const MAX_RETRIES = 3;
-      const RETRY_DELAY_MS = 2000;
+      if (existingBirthdayHeight) {
+        // Reuse existing birthday height (existing wallet)
+        birthdayHeight = existingBirthdayHeight;
+        console.log('[ZcashService] ♻️ Reusing existing birthday height:', birthdayHeight);
+      } else {
+        // Fetch new birthday height (new wallet)
+        console.log('[ZcashService] Getting birthday height...');
+        const FALLBACK_BIRTHDAY_HEIGHT = 2800000; // October 2024 testnet checkpoint
+        const MAX_RETRIES = 3;
+        const RETRY_DELAY_MS = 2000;
 
-      let birthdayHeight = FALLBACK_BIRTHDAY_HEIGHT;
+        birthdayHeight = FALLBACK_BIRTHDAY_HEIGHT;
 
-      // Retry loop avec délai entre tentatives
-      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-        try {
-          console.log(`[ZcashService] Fetching birthday height (attempt ${attempt}/${MAX_RETRIES})...`);
+        // Retry loop avec délai entre tentatives
+        for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+          try {
+            console.log(`[ZcashService] Fetching birthday height (attempt ${attempt}/${MAX_RETRIES})...`);
 
-          // Timeout wrapper: 30 secondes par tentative
-          const fetchedHeight = await Promise.race([
-            Tools.getBirthdayHeight(
-              config.lightwalletdHost,
-              config.lightwalletdPort
-            ),
-            new Promise<number>((_, reject) =>
-              setTimeout(() => reject(new Error('Timeout after 30s')), 30000)
-            )
-          ]);
+            // Timeout wrapper: 30 secondes par tentative
+            const fetchedHeight = await Promise.race([
+              Tools.getBirthdayHeight(
+                config.lightwalletdHost,
+                config.lightwalletdPort
+              ),
+              new Promise<number>((_, reject) =>
+                setTimeout(() => reject(new Error('Timeout after 30s')), 30000)
+              )
+            ]);
 
-          birthdayHeight = fetchedHeight;
-          console.log('[ZcashService] ✅ Birthday height from server:', birthdayHeight);
-          break; // Success, exit retry loop
-        } catch (error) {
-          console.warn(`[ZcashService] Attempt ${attempt} failed:`, error);
+            birthdayHeight = fetchedHeight;
+            console.log('[ZcashService] ✅ Birthday height from server:', birthdayHeight);
+            break; // Success, exit retry loop
+          } catch (error) {
+            console.warn(`[ZcashService] Attempt ${attempt} failed:`, error);
 
-          if (attempt < MAX_RETRIES) {
-            console.log(`[ZcashService] Retrying in ${RETRY_DELAY_MS}ms...`);
-            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
-          } else {
-            console.warn('[ZcashService] ❌ All attempts failed, using fallback:', FALLBACK_BIRTHDAY_HEIGHT);
-            birthdayHeight = FALLBACK_BIRTHDAY_HEIGHT;
+            if (attempt < MAX_RETRIES) {
+              console.log(`[ZcashService] Retrying in ${RETRY_DELAY_MS}ms...`);
+              await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+            } else {
+              console.warn('[ZcashService] ❌ All attempts failed, using fallback:', FALLBACK_BIRTHDAY_HEIGHT);
+              birthdayHeight = FALLBACK_BIRTHDAY_HEIGHT;
+            }
           }
         }
       }
 
-      // Créer un alias unique pour ce wallet
-      const alias = `zchan_${Date.now()}`;
+      // Determine alias (reuse if provided, otherwise create new)
+      const alias = existingAlias || `zchan_${Date.now()}`;
 
       console.log('[ZcashService] Initializing synchronizer...');
 
@@ -103,7 +122,7 @@ export class ZcashService {
         defaultPort: config.lightwalletdPort,
         alias,
         birthdayHeight,
-        newWallet: true,
+        newWallet, // Use parameter
         seedPhraseLength: seedPhrase.split(' ').length,
       });
 
@@ -114,7 +133,7 @@ export class ZcashService {
         mnemonicSeed: seedPhrase, // Seed phrase in text format (24 words)
         alias,
         birthdayHeight,
-        newWallet: true,
+        newWallet, // Use parameter: true = new wallet, false = resume sync
       });
 
       currentSynchronizer = synchronizer;
@@ -149,7 +168,12 @@ export class ZcashService {
 
       console.log('[ZcashService] Wallet created successfully');
 
-      return { wallet, synchronizer };
+      return { 
+        wallet, 
+        synchronizer,
+        alias,
+        birthdayHeight
+      };
     } catch (error) {
       console.error('[ZcashService] Error creating wallet:', error);
       throw error;
